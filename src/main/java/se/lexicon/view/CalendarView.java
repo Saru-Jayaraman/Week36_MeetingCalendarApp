@@ -9,15 +9,16 @@ import java.util.List;
 
 public interface CalendarView {
     default void displayMenu() {
-        System.out.println("Calendar Options");
+        System.out.println("Calendar Options:");
         System.out.println("0. Register");
         System.out.println("1. Login");
         System.out.println("2. Add Calendar");
         System.out.println("3. Add Meeting");
-        System.out.println("4. Delete Calendar");
-        System.out.println("5. Display Meeting");
-        System.out.println("6. Logout");
-        System.out.println("7. Exit");
+        System.out.println("4. Delete Meeting");
+        System.out.println("5. Delete Calendar");
+        System.out.println("6. Display Calendar");
+        System.out.println("7. Logout");
+        System.out.println("8. Exit");
         System.out.println("Enter your choice");
         // ...
     }
