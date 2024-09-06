@@ -44,8 +44,7 @@ public class MeetingDAOImpl implements MeetingDAO {
             try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int meetingId = generatedKeys.getInt(1);
-                    new Meeting(meetingId, meeting.getTitle(), meeting.getStartTime(), meeting.getEndTime(), meeting.getDescription(), meeting.getCalendar());
-                    return meeting;
+                    return new Meeting(meetingId, meeting.getTitle(), meeting.getStartTime(), meeting.getEndTime(), meeting.getDescription(), meeting.getCalendar());
                 } else {
                     String errorMessage = "Creating meeting failed, no ID obtained.";
                     throw new MySQLException(errorMessage);
@@ -92,8 +91,7 @@ public class MeetingDAOImpl implements MeetingDAO {
         String selectQuery = "SELECT * FROM meetings WHERE calendar_id = ?";
         try (
 
-                PreparedStatement preparedStatement = connection.prepareStatement(selectQuery);
-
+                PreparedStatement preparedStatement = connection.prepareStatement(selectQuery)
         ) {
             preparedStatement.setInt(1, calendarId);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {

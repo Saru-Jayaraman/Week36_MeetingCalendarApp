@@ -74,7 +74,7 @@ public class Meeting {
         return calendar;
     }
 
-    private void timeValidation() {
+    public void timeValidation() {
         //check if start time is before now
         LocalDateTime now = LocalDateTime.now();
         if (this.startTime.isBefore(now)) {

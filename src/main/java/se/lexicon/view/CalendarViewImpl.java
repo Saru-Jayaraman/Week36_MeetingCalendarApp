@@ -54,23 +54,20 @@ public class CalendarViewImpl implements CalendarView {
     @Override
     public Meeting promoteMeetingForm() {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter title:");
+        System.out.println("Enter a title for meeting: ");
         String title = scanner.nextLine();
-        System.out.println("Enter description:");
-        String description = scanner.nextLine();
 
         System.out.println("Start Date & Time (yyyy-MM-dd HH:mm): ");
         String start = scanner.nextLine();
-        LocalDateTime startLocalDateTime = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        if (startLocalDateTime.isBefore(LocalDateTime.now()))
-            throw new IllegalArgumentException("Enter a future date & time.");
-
         System.out.println("End Date & Time (yyyy-MM-dd HH:mm): ");
         String end = scanner.nextLine();
-        LocalDateTime endLocalDateTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        if (endLocalDateTime.isBefore(startLocalDateTime))
-            throw new IllegalArgumentException("Enter a end date & time after start date & time.");
-        return new Meeting(title, startLocalDateTime, endLocalDateTime, description);
+        System.out.println("Enter Description: ");
+        String description = scanner.nextLine();
+
+        LocalDateTime startDateTime = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        LocalDateTime endDateTime = LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+
+        return new Meeting(title, startDateTime, endDateTime, description);
 
     }
 

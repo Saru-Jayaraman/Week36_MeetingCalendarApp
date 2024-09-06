@@ -9,10 +9,7 @@ import se.lexicon.model.Meeting;
 import se.lexicon.model.User;
 import se.lexicon.view.CalendarView;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 public class CalendarController {
 
@@ -124,21 +121,37 @@ public class CalendarController {
             view.displayWarningMessage("You need to login first.");
             return;
         }
-        printCalendarDetails("Calendars list:");
-        view.displayMessage("Enter calendar title:");
-        Scanner scanner = new Scanner(System.in);
-        String calendarToCreateMeeting = scanner.nextLine();
+        view.displayMessage("Calendars list:");
+        Collection<Calendar> allCalendars = calendarDAO.findCalendarByUsername(username);
+        if (allCalendars.isEmpty()) {
+            view.displayWarningMessage("No calendar found.");
+            return;
+        }
+        allCalendars.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
 
+        view.displayMessage("Choose and enter a calendar title:");
+        String calendarToCreateMeeting = view.promoteString();
         Optional<Calendar> calendarToCreateMeetingOptional = calendarDAO.findByTitleAndUsername(calendarToCreateMeeting, username);
-        if (calendarToCreateMeetingOptional.isPresent()) {
-            view.displayMessage("Enter meeting details to create:");
-            Meeting meeting = view.promoteMeetingForm();
-            meeting.setCalendar(calendarToCreateMeetingOptional.get());
-            meetingDAO.createMeeting(meeting);
-            view.displaySuccessMessage("Meeting created successfully.");
-            displayMeeting(calendarToCreateMeetingOptional.get());
-        } else
+        if (!calendarToCreateMeetingOptional.isPresent()) {
             view.displayWarningMessage("Calendar not found to create. Enter exact calendar title to create.");
+            return;
+        }
+
+        view.displayMessage("Enter meeting details to create:");
+        Meeting meeting = view.promoteMeetingForm();
+        meeting.setCalendar(calendarToCreateMeetingOptional.get());
+
+        // Validate the meeting times
+        try {
+            meeting.timeValidation();
+        } catch (IllegalArgumentException e) {
+            view.displayErrorMessage(e.getMessage());
+            return;
+        }
+
+        Meeting createdMeeting = meetingDAO.createMeeting(meeting);
+        view.displaySuccessMessage("Meeting created successfully.");
+        view.displayMeetings(Collections.singletonList(createdMeeting));
     }
 
     private void deleteMeeting() {
@@ -146,26 +159,47 @@ public class CalendarController {
             view.displayWarningMessage("You need to login first.");
             return;
         }
-        printCalendarDetails("Calendars list:");
-        view.displayMessage("Enter calendar title:");
-        Scanner scanner = new Scanner(System.in);
-        String calendarString = scanner.nextLine();
+        view.displayMessage("Calendars list:");
+        Collection<Calendar> allCalendars = calendarDAO.findCalendarByUsername(username);
+        if (allCalendars.isEmpty()) {
+            view.displayWarningMessage("No calendar found.");
+            return;
+        }
+        allCalendars.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
 
+        view.displayMessage("Choose and enter a calendar title:");
+        String calendarString = view.promoteString();
         Optional<Calendar> calendarObject = calendarDAO.findByTitleAndUsername(calendarString, username);
-        if (calendarObject.isPresent()) {
-            List<Meeting> allMeetingsByCalendarId = (List<Meeting>) meetingDAO.findAllMeetingsByCalendarId(calendarObject.get().getId());
-            allMeetingsByCalendarId.forEach(meeting1 -> {
-                meeting1.setCalendar(calendarObject.get());
-                System.out.println(meeting1.getId() + "  " + meeting1.getTitle());
-            });
-
-            view.displayMessage("Enter meeting id to delete:");
-            int deleteMeetingId = scanner.nextInt();
-            meetingDAO.deleteMeeting(deleteMeetingId);
-            view.displaySuccessMessage("Meeting deleted successfully.");
-            displayMeeting(calendarObject.get());
-        } else {
+        if (!calendarObject.isPresent()) {
             view.displayWarningMessage("Calendar not found. Enter exact calendar title. ");
+            return;
+        }
+
+        //Before Deleting - Display list of meetings
+        List<Meeting> allMeetingsBeforeDelete = (List<Meeting>) meetingDAO.findAllMeetingsByCalendarId(calendarObject.get().getId());
+        if (allMeetingsBeforeDelete.isEmpty()) {
+            view.displayWarningMessage("No meetings is available to delete.");
+            return;
+        }
+        allMeetingsBeforeDelete.forEach(meeting -> {
+            meeting.setCalendar(calendarObject.get());
+            String meetingDisplay = meeting.getId() + "  " + meeting.getTitle();
+            view.displaySuccessMessage(meetingDisplay);
+        });
+
+        //Delete by id
+        view.displayMessage("Enter meeting id to delete:");
+        int deleteMeetingId = Integer.parseInt(view.promoteString());
+        boolean isDeleted = meetingDAO.deleteMeeting(deleteMeetingId);
+        if (!isDeleted) {
+            view.displayErrorMessage("Failed to delete meeting. Check the meeting id.");//2024-10-10 10:00
+        } else {
+            view.displaySuccessMessage("Meeting deleted successfully.");
+            //After Deleting - Display list of meetings
+            view.displayMessage("Meeting list after deleting:");
+            List<Meeting> allMeetingsAfterDelete = (List<Meeting>) meetingDAO.findAllMeetingsByCalendarId(calendarObject.get().getId());
+            allMeetingsAfterDelete.forEach(meeting -> meeting.setCalendar(calendarObject.get()));
+            view.displayMeetings(allMeetingsAfterDelete);
         }
     }
 
@@ -174,19 +208,37 @@ public class CalendarController {
             view.displayWarningMessage("You need to login first.");
             return;
         }
-        printCalendarDetails("Calendars list:");
-        view.displayMessage("Enter calendar title:");
-        Scanner scanner = new Scanner(System.in);
-        String titleToDelete = scanner.nextLine();
-
-        Optional<Calendar> calendarToDelete = calendarDAO.findByTitleAndUsername(titleToDelete, username);
-        if (calendarToDelete.isPresent()) {
-            calendarDAO.deleteCalendar(calendarToDelete.get().getId());
-            view.displaySuccessMessage("Calendar deleted successfully.");
-            printCalendarDetails("Calendar list after deleting.");
-        } else {
-            view.displayWarningMessage("Calendar not found to delete. Enter exact calendar title to delete.");
+        view.displayMessage("Calendars list:");
+        Collection<Calendar> allCalendarsBeforeDelete = calendarDAO.findCalendarByUsername(username);
+        if (allCalendarsBeforeDelete.isEmpty()) {
+            view.displayWarningMessage("No calendar found.");
+            return;
         }
+        allCalendarsBeforeDelete.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
+
+        view.displayMessage("Choose and enter a calendar title:");
+        String titleToDelete = view.promoteString();
+        Optional<Calendar> calendarToDelete = calendarDAO.findByTitleAndUsername(titleToDelete, username);
+        if (!calendarToDelete.isPresent()) {
+            view.displayWarningMessage("Calendar not found to delete. Enter exact calendar title to delete.");
+            return;
+        }
+
+        // Delete associated meetings first
+        for (Meeting meeting : meetingDAO.findAllMeetingsByCalendarId(calendarToDelete.get().getId())) {
+            meetingDAO.deleteMeeting(meeting.getId());
+        }
+        calendarDAO.deleteCalendar(calendarToDelete.get().getId());
+        view.displaySuccessMessage("Calendar deleted successfully.");
+        view.displaySuccessMessage("All meetings in this calendar are also deleted successfully.");
+
+        view.displayMessage("Calendars list after deleting:");
+        Collection<Calendar> allCalendarsAfterDelete = calendarDAO.findCalendarByUsername(username);
+        if (allCalendarsAfterDelete.isEmpty()) {
+            view.displayWarningMessage("No calendar found.");
+            return;
+        }
+        allCalendarsAfterDelete.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
     }
 
     private void displayCalendar() {
@@ -194,22 +246,26 @@ public class CalendarController {
             view.displayWarningMessage("You need to login first.");
             return;
         }
-        printCalendarDetails("Calendars list:");
-    }
-
-    private void printCalendarDetails(String message) {
-        view.displayMessage(message);
+        view.displayMessage("Calendars list:");
         Collection<Calendar> allCalendars = calendarDAO.findCalendarByUsername(username);
-        if(allCalendars == null)
-            System.out.println("No calendars found.");
-        else
-            allCalendars.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
-    }
+        if (allCalendars.isEmpty()) {
+            view.displayWarningMessage("No calendar found.");
+            return;
+        }
+        allCalendars.forEach(calendar -> view.displaySuccessMessage(calendar.getTitle()));
 
-    private void displayMeeting(Calendar calendar) {
-        List<Meeting> allMeetingsByCalendarId = (List<Meeting>) meetingDAO.findAllMeetingsByCalendarId(calendar.getId());
-        allMeetingsByCalendarId.forEach(meeting1 -> meeting1.setCalendar(calendar));
-        view.displayMeetings(allMeetingsByCalendarId);
-    }
+        view.displayMessage("Choose and enter a calendar title:");
+        String calendarTitle = view.promoteString();
+        Optional<Calendar> calendarObject = calendarDAO.findByTitleAndUsername(calendarTitle, username);
+        if (!calendarObject.isPresent()) {
+            view.displayWarningMessage("Calendar not found. Enter exact calendar title. ");
+            return;
+        }
 
+        view.displayMessage("Calendar details:");
+        view.displayCalendar(calendarObject.get());
+        List<Meeting> meetings = (List<Meeting>) meetingDAO.findAllMeetingsByCalendarId(calendarObject.get().getId());
+        meetings.forEach(meeting -> meeting.setCalendar(calendarObject.get()));
+        view.displayMeetings(meetings);
+    }
 }
