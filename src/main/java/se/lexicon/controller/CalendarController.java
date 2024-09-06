@@ -48,6 +48,9 @@ public class CalendarController {
                 case 2:
                     createCalendar();
                     break;
+                case 3:
+                    createMeeting();
+                    break;
                 case 4:
                     deleteMeeting();
                     break;
@@ -90,6 +93,10 @@ public class CalendarController {
     }
 
     private void login() {
+        if (isLoggedIn) {
+            view.displayWarningMessage("Already logged in. Proceed with other operations.");
+            return;
+        }
         User user = view.promoteUserForm();
         try {
             isLoggedIn = userDAO.authenticate(user);
