@@ -15,12 +15,10 @@ public class App {
     public static void main(String[] args) {
         try {
             UserDAO userDAO = new UserDAOImpl(CalendarDBConnection.getConnection());
-            User userCreated = userDAO.createUser("admin");
+            User userCreated = userDAO.createUser("admin5");
             System.out.println("User info: " + userCreated.userInfo());
             Optional<User> userOptional = userDAO.finByUsername("admin");
-            if (userOptional.isPresent()) {
-                System.out.println("Hashed password: " + userOptional.get().getHashedPassword());
-            }
+            userOptional.ifPresent(user -> System.out.println("Hashed password: " + user.getHashedPassword()));
         } catch (Exception e) {
             CalendarExceptionHandler.handleException(e);
         }
