@@ -1,5 +1,5 @@
-create schema if not exists g51_meeting_calendar_db;
-use g51_meeting_calendar_db;
+create schema if not exists meeting_calendar_db;
+use meeting_calendar_db;
 
 create table users(
 username varchar(255) not null primary key,
